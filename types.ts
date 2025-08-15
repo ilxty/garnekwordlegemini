@@ -1,4 +1,3 @@
-
 export enum LetterState {
     Correct, // Green
     Present, // Yellow
@@ -16,15 +15,34 @@ export type Guess = Letter[];
 export type KeyStatus = { [key: string]: LetterState };
 
 export enum GameStatus {
+    Waiting,
     Initializing,
     Playing,
-    WonRound,
-    LostRound,
+    RoundOver,
     GameOver,
 }
 
-export interface GameSettings {
+export interface Player {
+    id: string;
     nickname: string;
+    score: number;
+    guesses: string[];
+    roundScore: number;
+    roundFinished: boolean;
+}
+
+export interface GameSettings {
     rounds: number;
     timeLimit: number;
+}
+
+export interface Game {
+    id: string;
+    hostId: string;
+    settings: GameSettings;
+    players: { [id: string]: Player };
+    status: GameStatus;
+    currentRound: number;
+    secretWords: string[];
+    roundStartTime: number | null;
 }

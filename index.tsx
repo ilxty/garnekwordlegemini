@@ -1,4 +1,5 @@
 
+import 'firebase/firestore'; // Import for side-effects to register firestore
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';

@@ -5,14 +5,17 @@ import { SECRET_WORDS } from '../secretWordlist';
 const wordSet = new Set(WORDS);
 
 /**
- * Selects a random word from the official secret word list.
- * @returns A promise that resolves to a 5-letter secret word.
+ * Selects a specified number of unique random words from the secret word list.
+ * @param count The number of secret words to generate.
+ * @returns A promise that resolves to an array of unique 5-letter secret words.
  */
-export const generateSecretWord = async (): Promise<string> => {
-    const randomIndex = Math.floor(Math.random() * SECRET_WORDS.length);
-    // The async/Promise is kept to maintain the function signature
-    // and avoid having to refactor the calling component.
-    return Promise.resolve(SECRET_WORDS[randomIndex]);
+export const generateSecretWords = async (count: number): Promise<string[]> => {
+    const words = new Set<string>();
+    while (words.size < count && words.size < SECRET_WORDS.length) {
+        const randomIndex = Math.floor(Math.random() * SECRET_WORDS.length);
+        words.add(SECRET_WORDS[randomIndex]);
+    }
+    return Promise.resolve(Array.from(words));
 };
 
 /**
