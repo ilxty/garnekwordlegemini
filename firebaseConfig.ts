@@ -1,19 +1,17 @@
-import { initializeApp } from "firebase/app";
+
+import * as firebaseApp from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAKnbyjjakE1SexzByM_PCeJZXQDvLAZgs",
-  authDomain: "garnek-events.firebaseapp.com",
-  databaseURL: "https://garnek-events-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "garnek-events",
-  storageBucket: "garnek-events.appspot.com",
-  messagingSenderId: "113887414431",
-  appId: "1:113887414431:web:f6f4e79e48c9bfb04ffaaa",
-  measurementId: "G-350K24VV2X"
+  apiKey: "AIzaSyDevY6kZuqiGXcRnsA2aQw-PTzCuvZZPQU",
+  authDomain: "garnek-events-45d3c.firebaseapp.com",
+  projectId: "garnek-events-45d3c",
+  storageBucket: "garnek-events-45d3c.firebasestorage.app",
+  messagingSenderId: "93923054398",
+  appId: "1:93923054398:web:f4a9d2073a749d843ad26f"
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = firebaseApp.initializeApp(firebaseConfig);
 export const db = getFirestore(app);

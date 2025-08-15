@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Game, GameSettings, GameStatus, Player } from '../types';
 import { ROUND_OPTIONS, TIME_OPTIONS } from '../constants';
@@ -144,7 +145,7 @@ const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({ nickname, playerId,
                     <div>
                         <h3 className="text-lg font-semibold text-gray-300 mb-3">Players ({Object.keys(game.players).length}/8)</h3>
                         <ul className="space-y-2 bg-gray-700 p-3 rounded-md min-h-[120px]">
-                            {Object.values(game.players).map(p => (
+                            {(Object.values(game.players) as Player[]).map(p => (
                                 <li key={p.id} className="text-white font-medium">{p.nickname} {p.id === game.hostId && '(Host)'}</li>
                             ))}
                         </ul>

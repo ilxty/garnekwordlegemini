@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Game, GameStatus, Letter, LetterState, KeyStatus, Player } from '../types';
 import { WORD_LENGTH, MAX_GUESSES, GUESS_SCORE_MAP, PLACEMENT_BONUS, KEYBOARD_LAYOUT, INITIAL_KEY_STATUS } from '../constants';
@@ -23,7 +24,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ game, playerId, onReturnToLobby
     const [errorMessage, setErrorMessage] = useState('');
     const [timeLeft, setTimeLeft] = useState(game.settings.timeLimit);
 
-    const me = useMemo(() => game.players[playerId], [game.players, playerId]);
+    const me = useMemo(() => game.players[playerId] as Player, [game.players, playerId]);
     const secretWord = useMemo(() => game.secretWords[game.currentRound - 1], [game.secretWords, game.currentRound]);
     const gameRef = useMemo(() => doc(db, 'games', game.id), [game.id]);
 
@@ -38,6 +39,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ game, playerId, onReturnToLobby
     }, [game.currentRound, resetRoundState]);
 
     useEffect(() => {
+        if (!me) return;
         if (game.status !== GameStatus.Playing || !game.roundStartTime) {
             if (game.status === GameStatus.Initializing) setIsLoading(true);
             else setIsLoading(false);
@@ -47,7 +49,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ game, playerId, onReturnToLobby
         setIsLoading(false);
 
         const timer = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - game.roundStartTime!) / 1000);
+            const elapsed = Math.floor((Date.now() - game.roundStartTime!.toMillis()) / 1000);
             const remaining = game.settings.timeLimit - elapsed;
             setTimeLeft(Math.max(0, remaining));
 
@@ -61,7 +63,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ game, playerId, onReturnToLobby
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [game.status, game.roundStartTime, game.settings.timeLimit, gameRef, me.roundFinished, playerId]);
+    }, [game.status, game.roundStartTime, game.settings.timeLimit, gameRef, me, playerId]);
 
     // Check if all players have finished the round
     useEffect(() => {
@@ -74,7 +76,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ game, playerId, onReturnToLobby
     }, [game.players, game.status, gameRef]);
 
     const submitGuess = useCallback(async () => {
-        if (me.roundFinished) return;
+        if (!me || me.roundFinished) return;
         if (currentGuess.length !== WORD_LENGTH) {
             setErrorMessage("Not enough letters");
             setTimeout(() => setErrorMessage(''), 2000);
@@ -118,6 +120,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ game, playerId, onReturnToLobby
     }, [currentGuess, me, secretWord, gameRef, playerId]);
     
      useEffect(() => {
+        if (!me) return;
         const newKeyStatuses = { ...INITIAL_KEY_STATUS };
         me.guesses.forEach(guess => {
             guess.split('').forEach((char, index) => {
@@ -131,10 +134,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ game, playerId, onReturnToLobby
             });
         });
         setKeyStatuses(newKeyStatuses);
-    }, [me.guesses, secretWord]);
+    }, [me, secretWord]);
 
     const handleKeyPress = useCallback((key: string) => {
-        if (game.status !== GameStatus.Playing || me.roundFinished) return;
+        if (!me || game.status !== GameStatus.Playing || me.roundFinished) return;
 
         if (key === 'backspace') {
             setCurrentGuess((prev) => prev.slice(0, -1));
@@ -143,7 +146,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ game, playerId, onReturnToLobby
         } else if (currentGuess.length < WORD_LENGTH && /^[a-z]$/.test(key)) {
             setCurrentGuess((prev) => prev + key);
         }
-    }, [game.status, currentGuess, submitGuess, me.roundFinished]);
+    }, [game.status, currentGuess, submitGuess, me]);
     
     const handleNext = useCallback(async () => {
         if (playerId !== game.hostId) return;
@@ -196,17 +199,46 @@ const GameScreen: React.FC<GameScreenProps> = ({ game, playerId, onReturnToLobby
     }, [game.status, isLoading, handleKeyPress, handleNext, onReturnToLobby]);
 
     const coloredGuesses = useMemo(() => {
+        if (!me) return [];
         return me.guesses.map(guess => {
-            const guessChars = guess.split('');
-            const secretChars = secretWord.split('');
-            const result: Letter[] = Array(WORD_LENGTH).fill(null).map((_, i) => ({ char: guessChars[i], state: LetterState.Absent }));
-            result.forEach((l, i) => { if (secretChars[i] === l.char) { result[i].state = LetterState.Correct; secretChars[i] = ' '; } });
-            result.forEach((l, i) => { if(l.state !== LetterState.Correct && secretChars.includes(l.char)) { result[i].state = LetterState.Present; secretChars[secretChars.indexOf(l.char)] = ' ';} });
+            const secret = secretWord.split('');
+            const result: Letter[] = Array(WORD_LENGTH).fill(0).map((_, i) => ({
+                char: guess[i],
+                state: LetterState.Absent,
+            }));
+
+            const letterCounts = secret.reduce((acc, char) => {
+                acc[char] = (acc[char] || 0) + 1;
+                return acc;
+            }, {} as {[key: string]: number});
+
+            // First pass for correct letters
+            result.forEach((letter, i) => {
+                if (secret[i] === letter.char) {
+                    result[i].state = LetterState.Correct;
+                    letterCounts[letter.char]--;
+                }
+            });
+
+            // Second pass for present letters
+            result.forEach((letter, i) => {
+                if (result[i].state !== LetterState.Correct) {
+                    if (letterCounts[letter.char] > 0) {
+                        result[i].state = LetterState.Present;
+                        letterCounts[letter.char]--;
+                    }
+                }
+            });
+
             return result;
         });
-    }, [me.guesses, secretWord]);
+    }, [me, secretWord]);
     
-    const sortedPlayers = useMemo(() => Object.values(game.players).sort((a, b) => b.score - a.score), [game.players]);
+    const sortedPlayers = useMemo(() => (Object.values(game.players) as Player[]).sort((a, b) => b.score - a.score), [game.players]);
+
+    if (!me) {
+        return <Spinner />;
+    }
 
     return (
         <div className="flex flex-col md:flex-row items-start justify-center gap-8 w-full">

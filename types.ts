@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export enum LetterState {
     Correct, // Green
     Present, // Yellow
@@ -44,5 +46,5 @@ export interface Game {
     status: GameStatus;
     currentRound: number;
     secretWords: string[];
-    roundStartTime: number | null;
+    roundStartTime: Timestamp | null;
 }
