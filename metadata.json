@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Wordle Battle",
+  "description": "A Wordle-like game where you guess as many 5-letter words as you can against the clock, powered by the Gemini API.",
+  "requestFramePermissions": []
+}
